@@ -8,7 +8,7 @@ import java.util.HashMap;
 
 public class Server {
 
-    private HashMap<String, String> store = new HashMap<>();
+    private HashMap<String, String[]> store = new HashMap<>(); // <key, [value, flags, byte_count]>
 
     private int PORT;
 
@@ -21,20 +21,33 @@ public class Server {
     }
 
     void processCommand(String command, BufferedReader in, PrintWriter out) throws IOException {
+        if(command.length() == 0) {
+            return;
+        }
 
-        if (command.matches("set [a-zA-Z]* [0-9]* [0-9]* [0-9]*\\\\r\\\\n")) {
+        if (command.matches("set [a-zA-Z0-9]* [0-9]* [0-9]* [0-9]*[ a-zA-Z]*?\\\\r\\\\n")) {
             String[] split = command.replace("\\r\\n", "").split(" ");
             String value = in.readLine();
+            while(!value.matches("[a-zA-Z0-9]*\\\\r\\\\n")) {
+                out.println("ERROR");
+                value = in.readLine();
+            }
             String storeValue = value.replace("\\r\\n", "");
-            store.put(split[1], storeValue);
-            out.println("STORED");
-        } else if(command.matches("get [a-zA-Z]*\\\\r\\\\n")) {
+            String[] setInfo = new String[]{storeValue, split[2], split[4]};
+            store.put(split[1], setInfo);
+            if(split.length < 6) {
+                out.println("STORED");
+            }
+        } else if(command.matches("get [a-zA-Z0-9]*\\\\r\\\\n")) {
             String[] split = command.replace("\\r\\n", "").split(" ");
             if(store.containsKey(split[1])) {
-                out.println(store.get(split[1]));
+                String[] getInfo = store.get(split[1]);
+                out.printf("VALUE %s %s %s\r\n%s\r\nEND\r\n", split[1], getInfo[1], getInfo[2], getInfo[0]);
             } else {
                 out.println("ERROR");
             }
+        } else {
+            out.println("ERROR");
         }
     }
 
