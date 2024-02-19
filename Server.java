@@ -68,6 +68,74 @@ public class Server {
             } else {
                 out.println("END");
             }
+        } else if (command.matches("add [a-zA-Z0-9]* [0-9]* [-0-9]* [0-9]*[ a-zA-Z]*?\\\\r\\\\n")) {
+            String[] split = command.replace("\\r\\n", "").split(" ");
+            String value = in.readLine();
+            while(!value.matches("[a-zA-Z0-9]*\\\\r\\\\n")) {
+                out.println("ERROR");
+                value = in.readLine();
+            }
+
+            if(store.containsKey(split[1])) {
+                out.println("NOT STORED");
+                return;
+            }
+
+            String storeValue = value.replace("\\r\\n", "");
+            String[] setInfo = new String[]{storeValue, split[2], split[4]};
+
+            // store expiration time
+            if(Integer.parseInt(split[3]) > 0) {
+                long currentTimeSeconds = System.currentTimeMillis() / 1000 + Long.parseLong(split[3]);
+                expired.put(split[1], currentTimeSeconds);
+            } else if(Integer.parseInt(split[3]) < 0) {
+                if(split.length < 6) {
+                    out.println("STORED");
+                }
+                return;
+            }
+
+            store.put(split[1], setInfo);
+
+            if(split.length < 6) {
+                out.println("STORED");
+            }
+        } else if (command.matches("replace [a-zA-Z0-9]* [0-9]* [-0-9]* [0-9]*[ a-zA-Z]*?\\\\r\\\\n")) {
+            String[] split = command.replace("\\r\\n", "").split(" ");
+            String value = in.readLine();
+            while(!value.matches("[a-zA-Z0-9]*\\\\r\\\\n")) {
+                out.println("ERROR");
+                value = in.readLine();
+            }
+
+            if(!store.containsKey(split[1])) {
+                out.println("NOT STORED");
+                return;
+            }
+
+            String storeValue = value.replace("\\r\\n", "");
+            String[] setInfo = new String[]{storeValue, split[2], split[4]};
+
+            if(expired.containsKey(split[1])) {
+                expired.remove(split[1]);
+            }
+
+            // store expiration time
+            if(Integer.parseInt(split[3]) > 0) {
+                long currentTimeSeconds = System.currentTimeMillis() / 1000 + Long.parseLong(split[3]);
+                expired.put(split[1], currentTimeSeconds);
+            } else if(Integer.parseInt(split[3]) < 0) {
+                if(split.length < 6) {
+                    out.println("STORED");
+                }
+                return;
+            }
+
+            store.put(split[1], setInfo);
+
+            if(split.length < 6) {
+                out.println("STORED");
+            }
         } else {
             out.println("ERROR");
         }
