@@ -136,6 +136,42 @@ public class Server {
             if(split.length < 6) {
                 out.println("STORED");
             }
+        } else if(command.matches("append [a-zA-Z0-9]* [0-9]* [-0-9]* [0-9]*[ a-zA-Z]*?\\\\r\\\\n") || command.matches("prepend [a-zA-Z0-9]* [0-9]* [-0-9]* [0-9]*[ a-zA-Z]*?\\\\r\\\\n")) {
+            String[] split = command.replace("\\r\\n", "").split(" ");
+            String value = in.readLine();
+            while(!value.matches("[a-zA-Z0-9]*\\\\r\\\\n")) {
+                out.println("ERROR");
+                value = in.readLine();
+            }
+
+            if(!store.containsKey(split[1])) {
+                out.println("NOT STORED");
+                return;
+            }
+
+            if(expired.containsKey(split[1]) && expired.get(split[1]) < System.currentTimeMillis()/1000) {
+                expired.remove(split[1]);
+                store.remove(split[1]);
+                out.println("NOT STORED");
+                return;
+            }
+
+            String storeValue = value.replace("\\r\\n", "");
+
+            // update values
+            if(split[0].equals("append")) {
+                store.get(split[1])[0] = store.get(split[1])[0].concat(storeValue);
+            } else {
+                store.get(split[1])[0] = storeValue.concat(store.get(split[1])[0]);
+            }
+            store.get(split[1])[2] = String.valueOf(Integer.parseInt(store.get(split[1])[2])+ Integer.parseInt(split[4]));
+
+            if(Integer.parseInt(split[3]) > 0) {
+                long currentTimeSeconds = System.currentTimeMillis() / 1000 + Long.parseLong(split[3]);
+                expired.put(split[1], currentTimeSeconds);
+            }
+
+            out.println("STORED");
         } else {
             out.println("ERROR");
         }
